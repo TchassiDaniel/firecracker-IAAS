@@ -1,0 +1,12 @@
+---
+- hosts: frontalserver
+  vars:
+    springboot_application_name: user
+    springboot_src: /tmp/spring-boot-sample.jar
+  roles:
+#Installation de mysql
+    - role: mysql
+#Installation du projets de gestion des users
+    - role: ansible-springboot
+#Installation de react
+    - role: react

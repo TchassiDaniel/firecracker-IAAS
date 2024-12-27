@@ -1,3 +1,5 @@
+---
+# Installer MySQL
 - name: Install MySQL
   apt:
     name: "{{ item }}"
@@ -5,28 +7,28 @@
   loop:
     - mysql-server
 
+# Démarrer le service MySQL
 - name: Start the MySQL service
   service:
     name: mysql
     state: started
 
+# Créer un utilisateur deploy dans MySQL
 - name: Create deploy user for MySQL
-  mysql_user:
-    name: deploy
-    host: "%"
-    password: root
-    priv: "*.*:ALL,GRANT"
+  command: >
+    mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'deploy'@'%' IDENTIFIED BY 'root'; 
+                              GRANT ALL PRIVILEGES ON *.* TO 'deploy'@'%' WITH GRANT OPTION;"
 
+# Supprimer les utilisateurs anonymes
 - name: Ensure anonymous users are not in the database
-  mysql_user:
-    user: ""
-    host: "{{ item }}"
-    state: absent
+  command: >
+    mysql -u root -proot -e "DROP USER IF EXISTS ''@'{{ item }}';"
   loop:
     - 127.0.0.1
     - ::1
     - localhost
 
+# Copier le fichier .my.cnf avec les informations d'identification du root
 - name: Copy .my.cnf file with root password credentials
   template:
     src: templates/.my.cnf
@@ -34,11 +36,10 @@
     owner: root
     mode: "0600"
 
+# Mettre à jour le mot de passe root pour tous les comptes root
 - name: Update MySQL root password for all root accounts
-  mysql_user:
-    name: root
-    host: "{{ item }}"
-    password: root
+  command: >
+    mysql -u root -proot -e "ALTER USER 'root'@'{{ item }}' IDENTIFIED BY 'root';"
   loop:
     - 127.0.0.1
     - ::1

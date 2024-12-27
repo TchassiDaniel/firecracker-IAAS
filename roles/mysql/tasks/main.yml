@@ -1,46 +1,22 @@
 ---
-# Installer MySQL
-- name: Install MySQL
-  apt:
-    name: "{{ item }}"
-    state: present
-  loop:
-    - mysql-server
-
-# Démarrer le service MySQL
-- name: Start the MySQL service
-  service:
-    name: mysql
+# Lancer un conteneur MySQL avec les paramètres de connexion
+- name: Run MySQL container
+  docker_container:
+    name: mysql-container
+    image: mysql:latest
     state: started
+    restart_policy: always
+    exposed_ports:
+      - "3306"
+    published_ports:
+      - "3306:3306"
+    env:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql-data:/var/lib/mysql
 
-# Créer un utilisateur deploy dans MySQL
-- name: Create deploy user for MySQL
-  command: >
-    mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'deploy'@'%' IDENTIFIED BY 'root'; 
-                              GRANT ALL PRIVILEGES ON *.* TO 'deploy'@'%' WITH GRANT OPTION;"
-
-# Supprimer les utilisateurs anonymes
-- name: Ensure anonymous users are not in the database
-  command: >
-    mysql -u root -proot -e "DROP USER IF EXISTS ''@'{{ item }}';"
-  loop:
-    - 127.0.0.1
-    - ::1
-    - localhost
-
-# Copier le fichier .my.cnf avec les informations d'identification du root
-- name: Copy .my.cnf file with root password credentials
-  template:
-    src: templates/.my.cnf
-    dest: /etc/mysql/my.cnf
-    owner: root
-    mode: "0600"
-
-# Mettre à jour le mot de passe root pour tous les comptes root
-- name: Update MySQL root password for all root accounts
-  command: >
-    mysql -u root -proot -e "ALTER USER 'root'@'{{ item }}' IDENTIFIED BY 'root';"
-  loop:
-    - 127.0.0.1
-    - ::1
-    - localhost
+# Créer un volume Docker pour persister les données de la base de données
+- name: Create a persistent volume for MySQL data
+  docker_volume:
+    name: mysql-data
+    state: present

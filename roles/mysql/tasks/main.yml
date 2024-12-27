@@ -4,7 +4,6 @@
     state: present
   loop:
     - mysql-server
-    - python-mysqldb
 
 - name: Start the MySQL service
   service:

@@ -3,10 +3,7 @@
     name: "{{ item }}"
     state: present
   loop:
-    - mysql-server-core-5.5
-    - mysql-client-core-5.5
     - libmysqlclient-dev
-    - python-mysqldb
     - mysql-server
     - mysql-client
 

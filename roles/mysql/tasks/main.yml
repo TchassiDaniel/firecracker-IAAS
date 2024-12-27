@@ -3,9 +3,7 @@
     name: "{{ item }}"
     state: present
   loop:
-    - libmysqlclient-dev
     - mysql-server
-    - mysql-client
 
 - name: Start the MySQL service
   service:

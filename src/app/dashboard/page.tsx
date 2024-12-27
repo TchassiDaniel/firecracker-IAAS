@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../context/AuthContext';
-import Image from 'next/image';
-import { FiServer, FiCpu, FiHardDrive } from 'react-icons/fi';
-import { createVM, getVMs, deleteVM } from '../services/vm';
-import { toast } from 'react-hot-toast';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
+import Image from "next/image";
+import { FiServer, FiCpu, FiHardDrive } from "react-icons/fi";
+import { createVM, getVMs, deleteVM } from "../services/vm";
+import { toast } from "react-hot-toast";
 
 interface VMConfig {
   id: string;
@@ -14,7 +14,7 @@ interface VMConfig {
   description: string;
   cpu: number;
   ram: number;
-  storage: number;
+  storage: string;
   price: string;
 }
 
@@ -35,59 +35,61 @@ interface VirtualMachine {
   template: {
     cpu: number;
     ram: number;
-    storage: number;
+    storage: string;
   };
 }
 
 // Configurations prédéfinies pour les VMs
 const VM_CONFIGS: VMConfig[] = [
   {
-    id: 'micro',
-    name: 'Micro',
-    description: 'Idéal pour les tests et le développement',
+    id: "micro",
+    name: "Micro",
+    description: "Idéal pour les tests et le développement",
     cpu: 1,
     ram: 1024,
-    storage: 2,
-    price: '5€/mois'
+    storage: "400M",
+    price: "5€/mois",
   },
   {
-    id: 'small',
-    name: 'Small',
-    description: 'Pour les applications légères',
+    id: "small",
+    name: "Small",
+    description: "Pour les applications légères",
     cpu: 2,
     ram: 2048,
-    storage: 5,
-    price: '10€/mois'
+    storage: "400M",
+    price: "10€/mois",
   },
   {
-    id: 'medium',
-    name: 'Medium',
-    description: 'Pour les applications de production',
+    id: "medium",
+    name: "Medium",
+    description: "Pour les applications de production",
     cpu: 4,
     ram: 4096,
-    storage: 10,
-    price: '20€/mois'
-  }
+    storage: "400M",
+    price: "20€/mois",
+  },
 ];
 
 // Systèmes d'exploitation disponibles
 const OS_OPTIONS: OSOption[] = [
   {
-    id: 'ubuntu',
-    name: 'Ubuntu 22.04 LTS',
-    description: 'Distribution Linux stable et populaire',
-    kernel: '/var/lib/firecracker/hello/hello-vmlinux.bin',
-    rootfs: '/var/lib/firecracker/hello/hello-rootfs.ext4',
-    icon: '/ubuntu.svg'
+    id: "ubuntu",
+    name: "Ubuntu 22.04 LTS",
+    description: "Distribution Linux stable et populaire",
+    kernel: "/home/daniel/Documents/Hackathon24/test3/vmlinux-5.10.225",
+    rootfs:
+      "/home/daniel/Documents/Hackathon24/test3/ubuntu-24.04.squashfs.upstream",
+    icon: "/ubuntu.svg",
   },
   {
-    id: 'debian',
-    name: 'Debian 11',
-    description: 'Distribution Linux robuste et fiable',
-    kernel: '/var/lib/firecracker/hello/hello-vmlinux.bin',
-    rootfs: '/var/lib/firecracker/hello/hello-rootfs.ext4',
-    icon: '/debian.svg'
-  }
+    id: "debian",
+    name: "Debian 11",
+    description: "Distribution Linux robuste et fiable",
+    kernel: "/home/daniel/Documents/Hackathon24/test3/vmlinux-5.10.225",
+    rootfs:
+      "/home/daniel/Documents/Hackathon24/test3/ubuntu-24.04.squashfs.upstream",
+    icon: "/debian.svg",
+  },
 ];
 
 export default function Dashboard() {
@@ -96,10 +98,10 @@ export default function Dashboard() {
   const [isCreateSectionOpen, setIsCreateSectionOpen] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<VMConfig | null>(null);
   const [selectedOS, setSelectedOS] = useState<OSOption | null>(null);
-  const [hostname, setHostname] = useState('');
-  const [sshKey, setSSHKey] = useState('');
-  const [ipAddr, setIpAddr] = useState('');
-  const [gateway, setGateway] = useState('');
+  const [hostname, setHostname] = useState("");
+  const [sshKey, setSSHKey] = useState("");
+  const [ipAddr, setIpAddr] = useState("");
+  const [gateway, setGateway] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [vms, setVMs] = useState<VirtualMachine[]>([]);
   const [isLoadingVMs, setIsLoadingVMs] = useState(true);
@@ -107,14 +109,18 @@ export default function Dashboard() {
   // Fonctions pour calculer les statistiques
   const calculateStats = (vms: VirtualMachine[]) => {
     return {
-      activeVMs: vms.filter(vm => vm.status === 'running').length,
-      totalCPU: vms.reduce((total, vm) => total + vm.template.cpu, 0),
-      totalRAM: vms.reduce((total, vm) => total + vm.template.ram, 0) / 1024, // Conversion en GB
+      activeVMs: 0, //vms.filter((vm) => vm.status === "running").length,
+      totalCPU: 0, //vms.reduce((total, vm) => total + vm.template.cpu, 0),
+      totalRAM: 0, //vms.reduce((total, vm) => total + vm.template.ram, 0) / 1024, // Conversion en GB
     };
   };
 
   // État pour les statistiques
-  const [stats, setStats] = useState({ activeVMs: 0, totalCPU: 0, totalRAM: 0 });
+  const [stats, setStats] = useState({
+    activeVMs: 0,
+    totalCPU: 0,
+    totalRAM: 0,
+  });
 
   // Mise à jour des stats quand les VMs changent
   useEffect(() => {
@@ -123,21 +129,31 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/');
+      router.push("/");
     }
   }, [user, isLoading, router]);
 
   const fetchVMs = async () => {
     if (!user?.id) {
+      setIsLoadingVMs(false);
       return;
     }
-    
+
     try {
+      setIsLoadingVMs(true);
       const fetchedVMs = await getVMs(user.id);
-      setVMs(fetchedVMs);
+      console.log("VMs récupérées:", fetchedVMs); // Debug log
+
+      if (Array.isArray(fetchedVMs)) {
+        setVMs(fetchedVMs);
+      } else {
+        console.error("Format de données incorrect:", fetchedVMs);
+        setVMs([]);
+      }
     } catch (error) {
-      console.error('Erreur lors de la récupération des VMs:', error);
-      toast.error('Impossible de récupérer la liste des VMs');
+      console.error("Erreur détaillée lors de la récupération des VMs:", error);
+      setVMs([]);
+      toast.error("Impossible de récupérer la liste des VMs");
     } finally {
       setIsLoadingVMs(false);
     }
@@ -145,18 +161,26 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user?.id) {
+      console.log("Démarrage fetchVMs pour user:", user.id); // Debug log
       fetchVMs();
     }
-  }, [user]);
+  }, [user?.id]); // Dépendance corrigée
 
   const handleLogout = () => {
     logout();
-    router.push('/');
+    router.push("/");
   };
 
   const handleCreateVM = async () => {
-    if (!user?.id || !selectedConfig || !selectedOS || !hostname.trim() || !ipAddr.trim() || !gateway.trim()) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+    if (
+      !user?.id ||
+      !selectedConfig ||
+      !selectedOS ||
+      !hostname.trim() ||
+      !ipAddr.trim() ||
+      !gateway.trim()
+    ) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
@@ -173,35 +197,39 @@ export default function Dashboard() {
           ram: selectedConfig.ram,
           storage: selectedConfig.storage,
           kernel_image: selectedOS.kernel,
-          rootfs_image: selectedOS.rootfs
-        }
+          rootfs_image: selectedOS.rootfs,
+        },
       };
-      console.log('Request Data:', JSON.stringify(requestData, null, 2));
-      
+      console.log("Request Data:", JSON.stringify(requestData, null, 2));
+
       const response = await createVM(requestData);
-      console.log('Response:', response);
-      
-      toast.success('Machine virtuelle créée avec succès !');
+      console.log("Response:", response);
+
+      toast.success("Machine virtuelle créée avec succès !");
       setIsCreateSectionOpen(false);
       resetForm();
       fetchVMs(); // Rafraîchir la liste des VMs
     } catch (error) {
-      console.error('Erreur lors de la création de la VM:', error);
-      toast.error(error instanceof Error ? error.message : 'Erreur lors de la création de la VM');
+      console.error("Erreur lors de la création de la VM:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la création de la VM"
+      );
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleDeleteVM = async (vmId: number) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette VM ?')) {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette VM ?")) {
       try {
         await deleteVM(vmId);
-        toast.success('VM supprimée avec succès');
+        toast.success("VM supprimée avec succès");
         fetchVMs(); // Rafraîchir la liste des VMs
       } catch (error) {
-        console.error('Erreur lors de la suppression de la VM:', error);
-        toast.error('Erreur lors de la suppression de la VM');
+        console.error("Erreur lors de la suppression de la VM:", error);
+        toast.error("Erreur lors de la suppression de la VM");
       }
     }
   };
@@ -209,10 +237,10 @@ export default function Dashboard() {
   const resetForm = () => {
     setSelectedConfig(null);
     setSelectedOS(null);
-    setHostname('');
-    setSSHKey('');
-    setIpAddr('');
-    setGateway('');
+    setHostname("");
+    setSSHKey("");
+    setIpAddr("");
+    setGateway("");
   };
 
   if (isLoading) {
@@ -242,11 +270,15 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3 bg-gray-50 rounded-full px-4 py-2">
                 <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                  <span className="text-white font-semibold">{user.username.charAt(0).toUpperCase()}</span>
+                  <span className="text-white font-semibold">
+                    {user.username.charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div className="text-sm">
-                  <span className="text-gray-500">Connecté en tant que</span>{' '}
-                  <span className="text-black font-medium">{user.username}</span>
+                  <span className="text-gray-500">Connecté en tant que</span>{" "}
+                  <span className="text-black font-medium">
+                    {user.username}
+                  </span>
                 </div>
               </div>
               <button
@@ -269,8 +301,12 @@ export default function Dashboard() {
                 <FiServer className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">VMs Actives</h3>
-                <p className="text-3xl font-bold text-white">{stats.activeVMs}</p>
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  VMs Actives
+                </h3>
+                <p className="text-3xl font-bold text-white">
+                  {stats.activeVMs}
+                </p>
               </div>
             </div>
           </div>
@@ -280,8 +316,12 @@ export default function Dashboard() {
                 <FiCpu className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">CPU Total</h3>
-                <p className="text-3xl font-bold text-white">{stats.totalCPU} cores</p>
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  CPU Total
+                </h3>
+                <p className="text-3xl font-bold text-white">
+                  {stats.totalCPU} cores
+                </p>
               </div>
             </div>
           </div>
@@ -291,8 +331,12 @@ export default function Dashboard() {
                 <FiHardDrive className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">Mémoire Totale</h3>
-                <p className="text-3xl font-bold text-white">{stats.totalRAM.toFixed(1)} GB</p>
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  Mémoire Totale
+                </h3>
+                <p className="text-3xl font-bold text-white">
+                  {stats.totalRAM.toFixed(1)} GB
+                </p>
               </div>
             </div>
           </div>
@@ -308,11 +352,27 @@ export default function Dashboard() {
               <div className="p-2 bg-blue-100 rounded-lg">
                 <FiServer className="h-5 w-5 text-blue-600" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">Créer une nouvelle machine virtuelle</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Créer une nouvelle machine virtuelle
+              </h2>
             </div>
-            <div className={`transform transition-transform duration-200 ${isCreateSectionOpen ? 'rotate-180' : ''}`}>
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            <div
+              className={`transform transition-transform duration-200 ${
+                isCreateSectionOpen ? "rotate-180" : ""
+              }`}
+            >
+              <svg
+                className="w-5 h-5 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>
@@ -321,32 +381,53 @@ export default function Dashboard() {
             <div className="p-6 space-y-8">
               {/* Section OS */}
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Système d'exploitation</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Système d'exploitation
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {OS_OPTIONS.map((os) => (
                     <div
                       key={os.id}
                       className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                         selectedOS?.id === os.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-blue-200 hover:bg-gray-50"
                       }`}
                       onClick={() => setSelectedOS(os)}
                     >
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 relative">
-                          <Image src={os.icon} alt={os.name} layout="fill" objectFit="contain" />
+                          <Image
+                            src={os.icon}
+                            alt={os.name}
+                            layout="fill"
+                            objectFit="contain"
+                          />
                         </div>
                         <div>
-                          <h4 className="text-base font-medium text-gray-900">{os.name}</h4>
-                          <p className="text-sm text-gray-500">{os.description}</p>
+                          <h4 className="text-base font-medium text-gray-900">
+                            {os.name}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {os.description}
+                          </p>
                         </div>
                       </div>
                       {selectedOS?.id === os.id && (
                         <div className="absolute top-2 right-2">
                           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -358,44 +439,74 @@ export default function Dashboard() {
 
               {/* Section Configuration */}
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Configuration</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Configuration
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {VM_CONFIGS.map((config) => (
                     <div
                       key={config.id}
                       className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                         selectedConfig?.id === config.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-blue-200 hover:bg-gray-50"
                       }`}
                       onClick={() => setSelectedConfig(config)}
                     >
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <h4 className="text-base font-medium text-gray-900">{config.name}</h4>
-                          <span className="text-sm font-medium text-blue-600">{config.price}</span>
+                          <h4 className="text-base font-medium text-gray-900">
+                            {config.name}
+                          </h4>
+                          <span className="text-sm font-medium text-blue-600">
+                            {config.price}
+                          </span>
                         </div>
-                        <p className="text-sm text-gray-500">{config.description}</p>
+                        <p className="text-sm text-gray-500">
+                          {config.description}
+                        </p>
                         <div className="grid grid-cols-3 gap-2">
                           <div className="text-center p-2 bg-gray-50 rounded">
-                            <span className="block text-sm font-medium text-gray-900">{config.cpu}</span>
-                            <span className="block text-xs text-gray-500">CPU</span>
+                            <span className="block text-sm font-medium text-gray-900">
+                              {config.cpu}
+                            </span>
+                            <span className="block text-xs text-gray-500">
+                              CPU
+                            </span>
                           </div>
                           <div className="text-center p-2 bg-gray-50 rounded">
-                            <span className="block text-sm font-medium text-gray-900">{config.ram / 1024}GB</span>
-                            <span className="block text-xs text-gray-500">RAM</span>
+                            <span className="block text-sm font-medium text-gray-900">
+                              {config.ram / 1024}GB
+                            </span>
+                            <span className="block text-xs text-gray-500">
+                              RAM
+                            </span>
                           </div>
                           <div className="text-center p-2 bg-gray-50 rounded">
-                            <span className="block text-sm font-medium text-gray-900">{config.storage}GB</span>
-                            <span className="block text-xs text-gray-500">SSD</span>
+                            <span className="block text-sm font-medium text-gray-900">
+                              {config.storage}GB
+                            </span>
+                            <span className="block text-xs text-gray-500">
+                              SSD
+                            </span>
                           </div>
                         </div>
                       </div>
                       {selectedConfig?.id === config.id && (
                         <div className="absolute top-2 right-2">
                           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -407,10 +518,15 @@ export default function Dashboard() {
 
               {/* Section Configuration supplémentaire */}
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Configuration supplémentaire</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Configuration supplémentaire
+                </h3>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="hostname" className="block text-sm font-medium text-black mb-1">
+                    <label
+                      htmlFor="hostname"
+                      className="block text-sm font-medium text-black mb-1"
+                    >
                       Nom d'hôte <span className="text-black">*</span>
                     </label>
                     <input
@@ -423,7 +539,10 @@ export default function Dashboard() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="ipAddr" className="block text-sm font-medium text-black mb-1">
+                    <label
+                      htmlFor="ipAddr"
+                      className="block text-sm font-medium text-black mb-1"
+                    >
                       Adresse IP <span className="text-black">*</span>
                     </label>
                     <input
@@ -436,7 +555,10 @@ export default function Dashboard() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="gateway" className="block text-sm font-medium text-black mb-1">
+                    <label
+                      htmlFor="gateway"
+                      className="block text-sm font-medium text-black mb-1"
+                    >
                       Passerelle <span className="text-black">*</span>
                     </label>
                     <input
@@ -449,7 +571,10 @@ export default function Dashboard() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="sshKey" className="block text-sm font-medium text-black mb-1">
+                    <label
+                      htmlFor="sshKey"
+                      className="block text-sm font-medium text-black mb-1"
+                    >
                       Clé SSH (optionnelle)
                     </label>
                     <textarea
@@ -468,11 +593,23 @@ export default function Dashboard() {
               <div className="flex justify-end">
                 <button
                   onClick={handleCreateVM}
-                  disabled={isCreating || !selectedOS || !selectedConfig || !hostname.trim() || !ipAddr.trim() || !gateway.trim()}
+                  disabled={
+                    isCreating ||
+                    !selectedOS ||
+                    !selectedConfig ||
+                    !hostname.trim() ||
+                    !ipAddr.trim() ||
+                    !gateway.trim()
+                  }
                   className={`px-6 py-3 rounded-lg text-white font-medium transition-all duration-200 ${
-                    isCreating || !selectedOS || !selectedConfig || !hostname.trim() || !ipAddr.trim() || !gateway.trim()
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700 transform hover:-translate-y-1'
+                    isCreating ||
+                    !selectedOS ||
+                    !selectedConfig ||
+                    !hostname.trim() ||
+                    !ipAddr.trim() ||
+                    !gateway.trim()
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 transform hover:-translate-y-1"
                   }`}
                 >
                   {isCreating ? (
@@ -481,7 +618,7 @@ export default function Dashboard() {
                       <span>Création en cours...</span>
                     </div>
                   ) : (
-                    'Créer la machine virtuelle'
+                    "Créer la machine virtuelle"
                   )}
                 </button>
               </div>
@@ -496,7 +633,9 @@ export default function Dashboard() {
               <div className="p-2 bg-purple-100 rounded-lg">
                 <FiServer className="h-5 w-5 text-purple-600" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">Vos Machines Virtuelles</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Vos Machines Virtuelles
+              </h2>
             </div>
           </div>
 
@@ -511,16 +650,29 @@ export default function Dashboard() {
                 <div className="mx-auto w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mb-4">
                   <FiServer className="h-12 w-12 text-purple-500" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune VM active</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Aucune VM active
+                </h3>
                 <p className="text-gray-500 max-w-sm mx-auto mb-6">
-                  Vous n'avez pas encore de machines virtuelles. Créez votre première VM pour commencer.
+                  Vous n'avez pas encore de machines virtuelles. Créez votre
+                  première VM pour commencer.
                 </p>
                 <button
                   onClick={() => setIsCreateSectionOpen(true)}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
                   </svg>
                   Créer une VM
                 </button>
@@ -528,52 +680,87 @@ export default function Dashboard() {
             ) : (
               // Liste des VMs
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {vms.map((vm) => (
-                  <div key={vm.id} className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <FiServer className="h-5 w-5 text-blue-600" />
+                {vms.map(
+                  (vm) => (
+                    console.log(vm),
+                    (
+                      <div
+                        key={vm.id}
+                        className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                      >
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <FiServer className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-medium text-gray-900">
+                                  {vm.hostname}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                  {vm.ip_addr}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  Port: {vm.port}
+                                </p>
+                              </div>
+                            </div>
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                vm.status === "running"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {vm.status || "N/A"}
+                            </span>
                           </div>
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-900">{vm.hostname}</h3>
-                            <p className="text-sm text-gray-500">{vm.ip_addr}</p>
+                          <div className="grid grid-cols-3 gap-2 mb-4">
+                            <div className="text-center p-2 bg-gray-50 rounded">
+                              <span className="block text-sm font-medium text-gray-900">
+                                {vm.cpu}
+                              </span>
+                              <span className="block text-xs text-gray-500">
+                                CPU
+                              </span>
+                            </div>
+                            <div className="text-center p-2 bg-gray-50 rounded">
+                              <span className="block text-sm font-medium text-gray-900">
+                                {vm.ram / 1024}GB
+                              </span>
+                              <span className="block text-xs text-gray-500">
+                                RAM
+                              </span>
+                            </div>
+                            <div className="text-center p-2 bg-gray-50 rounded">
+                              <span className="block text-sm font-medium text-gray-900">
+                                {vm.storage}
+                              </span>
+                              <span className="block text-xs text-gray-500">
+                                SSD
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 mb-4">
+                            <div>Gateway: {vm.gateway}</div>
+                            <div className="truncate" title={vm.socket_path}>
+                              Socket: {vm.socket_path}
+                            </div>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleDeleteVM(vm.id)}
+                              className="px-3 py-1 text-sm font-medium text-red-700 hover:text-red-900 hover:bg-red-100 rounded-md transition-colors duration-200"
+                            >
+                              Supprimer
+                            </button>
                           </div>
                         </div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          vm.status === 'running' 
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {vm.status}
-                        </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mb-4">
-                        <div className="text-center p-2 bg-gray-50 rounded">
-                          <span className="block text-sm font-medium text-gray-900">{vm.template.cpu}</span>
-                          <span className="block text-xs text-gray-500">CPU</span>
-                        </div>
-                        <div className="text-center p-2 bg-gray-50 rounded">
-                          <span className="block text-sm font-medium text-gray-900">{vm.template.ram / 1024}GB</span>
-                          <span className="block text-xs text-gray-500">RAM</span>
-                        </div>
-                        <div className="text-center p-2 bg-gray-50 rounded">
-                          <span className="block text-sm font-medium text-gray-900">{vm.template.storage}GB</span>
-                          <span className="block text-xs text-gray-500">SSD</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-end space-x-2">
-                        <button 
-                          onClick={() => handleDeleteVM(vm.id)}
-                          className="px-3 py-1 text-sm font-medium text-red-700 hover:text-red-900 hover:bg-red-100 rounded-md transition-colors duration-200"
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    )
+                  )
+                )}
               </div>
             )}
           </div>

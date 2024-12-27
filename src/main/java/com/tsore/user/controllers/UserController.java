@@ -20,9 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 @AllArgsConstructor
 @RequestMapping(path = "/user", consumes = MediaType.APPLICATION_JSON_VALUE)
 public class UserController {
@@ -36,7 +38,7 @@ public class UserController {
   @PostMapping("/signup")
   public void inscription(@RequestBody User utilisateur) {
 
-    log.info("inscription");
+    //log.info("inscription");
 
     this.utilisateurService.save(utilisateur);
   }
@@ -52,6 +54,23 @@ public class UserController {
     }
 
     return jwt;
+  }
+
+
+  // Ajouter cette méthode dans la classe UserController
+  @GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+  public Map<String, Object> getUserInfo(@RequestHeader("Authorization") String token) {
+    // Extraire le username du token JWT
+    String username = this.jwtService.extractUsername(token.replace("Bearer ", ""));
+
+    // Récupérer l'utilisateur par son username
+    User user = this.utilisateurService.loadUserByName(username);
+
+    // Retourner l'ID et le username
+    return Map.of(
+            "id", user.getId(),
+            "username", user.getUsername()
+    );
   }
 
 }

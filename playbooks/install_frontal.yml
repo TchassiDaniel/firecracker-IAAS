@@ -3,10 +3,11 @@
   vars:
     springboot_application_name: user
     springboot_src: /tmp/spring-boot-sample.jar
+    path: /tmp/front/
   roles:
-#Installation de mysql
+    #Installation de mysql
     - role: mysql
-#Installation du projets de gestion des users
+    #Installation du projets de gestion des users
     - role: ansible-springboot
-#Installation de react
+    #Installation de react
     - role: react

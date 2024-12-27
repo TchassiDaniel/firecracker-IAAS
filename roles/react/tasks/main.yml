@@ -1,13 +1,35 @@
----
+# Installer nodejs
 - name: Installing nodejs
-  apt: name=nodejs update_cache=yes
+  apt:
+    name: nodejs
+    update_cache: yes
+
+# Installer npm
 - name: Installing npm
-  apt: name=npm update_cache=yes
+  apt:
+    name: npm
+    update_cache: yes
+
+# Installer les dépendances
 - name: Installing dependencies
   command: npm install
+  args:
+    chdir: "{{ path }}"
+
+# Compiler l'application
 - name: Building
   command: npm run build
+  args:
+    chdir: "{{ path }}"
+
+# Installer le serveur web
 - name: Installing web server
   command: npm install serve
+  args:
+    chdir: "{{ path }}"
+
+# Exécuter l'application sur http://localhost:8080
 - name: Running app on http://localhost:8080
-  command: chdir=./build serve -p 8080
+  command: serve -s build -p 8081
+  args:
+    chdir: "{{ path }}"

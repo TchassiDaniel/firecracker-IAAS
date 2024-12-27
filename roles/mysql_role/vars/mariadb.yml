@@ -1,5 +1,0 @@
----
-
-mysql_packages:
-  - mysql-common
-  - mariadb-server

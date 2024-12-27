@@ -1,5 +1,6 @@
 ---
 - hosts: frontalserver
+  become: yes
   vars:
     springboot_application_name: user
     springboot_src: /tmp/spring-boot-sample.jar

@@ -10,11 +10,6 @@
     name: mysql
     state: started
 
-- name: Remove the test database
-  mysql_db:
-    name: test
-    state: absent
-
 - name: Create deploy user for MySQL
   mysql_user:
     name: deploy
